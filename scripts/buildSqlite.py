@@ -62,4 +62,11 @@ c.executemany('INSERT INTO bugs_large VALUES (?,?,?,?)', values)
 connection.commit()
 print(f'{len(values)} entries added to DB Bugs Large')
 
+# Create indices
+for table in ['bugs', 'bugs_large', 'sstubs', 'sstubs_large']:
+    c.execute(f'CREATE INDEX parent_{table} ON {table}(parent)')
+    c.execute(f'CREATE INDEX child_{table} ON {table}(child)')
+for table in ['sstubs', 'sstubs_large']:
+    c.execute(f'CREATE INDEX type_{table} ON {table}(type)')
+
 connection.close()
