@@ -4,3 +4,4 @@ scipy==1.6.0
 matplotlib==3.3.3
 numpy==1.19.2
 PyGithub==1.54.1
+requests
