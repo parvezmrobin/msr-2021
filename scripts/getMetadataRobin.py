@@ -141,25 +141,43 @@ def get_dev_exp_v2(repo_url: str, sha1: str):
     return total_commits_of_dev_in_repo
 
 
+def get_days_since_last_change(repo_url: str, sha1: str, parent_sha1: str):
+    url = f'{BASE_URL}/repos/{repo_url}/commits/{sha1}'
+    response = requests.get(url=url, headers=HEADERS)
+    content = response.json()
+    date1 = parse_datetime(content['commit']['author']['date'])
+
+    url = f'{BASE_URL}/repos/{repo_url}/commits/{parent_sha1}'
+    response = requests.get(url=url, headers=HEADERS)
+    content = response.json()
+    date2 = parse_datetime(content['commit']['author']['date'])
+
+    return date1 - date2
+
+
 if __name__ == '__main__':
     dataset_path = '../dataset/sstubs'
-    with open(dataset_path) as file:
+    with open(dataset_path, encoding='utf-8') as file:
         i = 1
         entries = json.load(file)
         repo = entries[i]['projectName'].replace('.', '/')
         commit_sha1 = entries[i]['fixCommitSHA1']
+        parent_sha1 = entries[i]['fixCommitParentSHA1']
         file_path = entries[i]['bugFilePath']
 
-        # content = get_repo_tree(repo, commit_sha1)
-        # pprint(f'Project Size: {len(content["tree"])}, Truncated: {content["truncated"]}')
-        #
-        # project_authors = get_num_devs(repo, commit_sha1)
-        # file_authors = get_num_devs(repo, commit_sha1, file_path)
-        # print(f'Project Authors: {project_authors}')
-        # print(f'File Authors: {file_authors}')
-        #
-        # project_age = get_project_age(repo, commit_sha1)
-        # print(f'Project Age: {project_age}')
+        content = get_repo_tree(repo, commit_sha1)
+        pprint(f'Project Size: {len(content["tree"])}, Truncated: {content["truncated"]}')
+
+        project_authors = get_num_devs(repo, commit_sha1)
+        file_authors = get_num_devs(repo, commit_sha1, file_path)
+        print(f'Project Authors: {project_authors}')
+        print(f'File Authors: {file_authors}')
+
+        project_age = get_project_age(repo, commit_sha1)
+        print(f'Project Age: {project_age}')
 
         dev_exp = get_dev_exp_v2(repo, commit_sha1)
         print(f'Dev Experience: {dev_exp}')
+
+        distance = get_days_since_last_change(repo, commit_sha1, parent_sha1)
+        print(f'Days since last change: {distance}')
