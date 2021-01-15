@@ -2,9 +2,12 @@ import requests
 import json
 from pprint import pprint
 from datetime import datetime
+import warnings
+import pandas as pd
 
+with open('../config.json') as configFile:
+    GITHUB_TOKEN = json.load(configFile)['githubToken']
 USERNAME = 'nzoishie'
-GITHUB_TOKEN = '4d349bfd02f405b839d80cc15aca5e81b0a67f7c'
 BASE_URL = 'https://api.github.com'
 HEADERS = {
     'Authorization': f'token {GITHUB_TOKEN}',
@@ -15,7 +18,7 @@ CREATE_DATE_CACHE = {}
 COMMIT_CACHE = {}
 
 
-def get_repo_tree(repo_url: str, sha1: str):
+def get_repo_size(repo_url: str, sha1: str):
     url = f'{BASE_URL}/repos/{repo_url}/git/trees/{sha1}'
     response = requests.get(
         url=url,
@@ -25,7 +28,10 @@ def get_repo_tree(repo_url: str, sha1: str):
         headers=HEADERS,
     )
 
-    return response.json()
+    content = response.json()
+    if content["truncated"]:
+        warnings.warn(f'Truncated content for {repo_url}@{sha1}')
+    return len(content["tree"])
 
 
 def get_num_devs(repo_url: str, sha1: str, file: str = None):
@@ -47,7 +53,6 @@ def get_num_devs(repo_url: str, sha1: str, file: str = None):
 
 
 def get_project_age(repo_url: str, sha1: str):
-    create_date = None
     if repo_url in CREATE_DATE_CACHE:
         create_date = CREATE_DATE_CACHE[repo_url]
     else:
@@ -158,26 +163,34 @@ def get_days_since_last_change(repo_url: str, sha1: str, parent_sha1: str):
 if __name__ == '__main__':
     dataset_path = '../dataset/sstubs'
     with open(dataset_path, encoding='utf-8') as file:
-        i = 1
         entries = json.load(file)
-        repo = entries[i]['projectName'].replace('.', '/')
-        commit_sha1 = entries[i]['fixCommitSHA1']
-        parent_sha1 = entries[i]['fixCommitParentSHA1']
-        file_path = entries[i]['bugFilePath']
+    print(f'Iterating over {len(entries)} entries')
+    data = []
+    for i, entry in enumerate(entries):
+        print(i)
+        repo = entry['projectName'].replace('.', '/')
+        commit_sha1 = entry['fixCommitSHA1']
+        parent_sha1 = entry['fixCommitParentSHA1']
+        file_path = entry['bugFilePath']
 
-        content = get_repo_tree(repo, commit_sha1)
-        pprint(f'Project Size: {len(content["tree"])}, Truncated: {content["truncated"]}')
+        repo_size = get_repo_size(repo, commit_sha1)
+        # print(f'Repo Size: {repo_size}')
 
         project_authors = get_num_devs(repo, commit_sha1)
         file_authors = get_num_devs(repo, commit_sha1, file_path)
-        print(f'Project Authors: {project_authors}')
-        print(f'File Authors: {file_authors}')
+        # print(f'Project Authors: {project_authors}')
+        # print(f'File Authors: {file_authors}')
 
         project_age = get_project_age(repo, commit_sha1)
-        print(f'Project Age: {project_age}')
+        # print(f'Project Age: {project_age}')
 
         dev_exp = get_dev_exp_v2(repo, commit_sha1)
-        print(f'Dev Experience: {dev_exp}')
+        # print(f'Dev Experience: {dev_exp}')
 
         distance = get_days_since_last_change(repo, commit_sha1, parent_sha1)
-        print(f'Days since last change: {distance}')
+        # print(f'Days since last change: {distance}')
+        data.append([repo_size, project_authors, file_authors, project_age, dev_exp, distance])
+
+    columns = ['repo_size', 'project_authors', 'file_authors', 'project_age', 'dev_exp', 'distance']
+    df = pd.DataFrame(data=data, columns=columns)
+    df.to_csv('../database/meta-data.csv', index=False)
