@@ -2,3 +2,4 @@
 dataset/
 database/
 venv/
+config.json
