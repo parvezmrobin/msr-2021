@@ -3,3 +3,4 @@ dataset/
 database/
 venv/
 config.json
+node_modules
