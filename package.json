@@ -1,6 +1,10 @@
 {
   "name": "sstubs",
   "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "dataset-tool"
+  ],
   "main": "scripts/loadAuthor.mjs",
   "repository": "https://parvezmrobin@github.com/parvezmrobin/msr-2021",
   "author": "Parvez M Robin <this@parvezmrobin.com>",
