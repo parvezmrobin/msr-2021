@@ -40,6 +40,8 @@ col_names = {
     'type': 'Bug Type',
     'distance': 'Depth',
     'refix': 'Refix',
+    'before': 'Before',
+    'after': 'After',
 }
 
 sstubs_df = sstubs_df.merge(
